@@ -1,0 +1,280 @@
+import reqContext from "@fastify/request-context";
+
+import fs from "fs";
+import "dotenv/config";
+import axios from "axios";
+import cors from "@fastify/cors";
+import OpenAI from "openai";
+import Fastify, { FastifyInstance } from "fastify";
+import prisma from "./prisma";
+import fastifyJwt from "@fastify/jwt";
+import { User } from "@prisma/client";
+import fastifyMiddie from "@fastify/middie";
+
+const server = Fastify({
+  logger: true,
+});
+
+server.register(reqContext);
+
+server.register(cors, {
+  allowedHeaders: "*",
+  // TODO: CHANGE IN PRODUCTION TO PUBLIC WEBSITE URL
+  // allowedHeaders: "*",
+});
+
+const UNAUTHENTICATED_PATHS: any = {
+  "/loginWithGoogle": true,
+};
+// to CHECK AUTH and send away if not
+
+server.addHook("onRequest", async (req, reply) => {
+  // path doesn't require authenticated so continue
+  if (UNAUTHENTICATED_PATHS[req.routeOptions.url]) return;
+
+  const jwt = req.headers?.authorization?.replace("Bearer ", "");
+
+  // user didn't pass in auth header
+  if (!jwt) reply.status(401).send({ error: `Unauthenticated user.` });
+
+  const { email } = (await server.jwt.decode(jwt as string)) as any;
+  const user = await prisma.user.findFirst({
+    where: { email },
+  });
+
+  // set user on context
+  if (user) {
+    // @ts-expect-error
+    req.requestContext.set("user", user);
+  }
+});
+
+// for signing JWT tokens in auth
+server.register(fastifyJwt, {
+  secret: process.env.JWT_SECRET as string,
+  sign: { expiresIn: "24h" },
+});
+
+server.get("/", async function handler(request, reply) {
+  return { hello: "world" };
+});
+
+// ROUTE: to get a user's current session data
+server.get(`/session`, async (req, reply) => {
+  // @ts-expect-error
+  const user = req.requestContext.get("user");
+
+  return { user };
+
+  //
+});
+
+// ROUTE: will either create user, or log into user and send back JWT
+server.post(`/loginWithGoogle`, async (req, reply) => {
+  const { name, email, picture } = JSON.parse(req.body as string);
+  let user = await prisma.user.findFirst({ where: { email } });
+
+  // user already exists
+
+  // user isn't registered
+  if (!user) {
+    user = await prisma.user.create({ data: { email, name, picture } });
+  }
+
+  const jwt = server.jwt.sign({
+    email: user.email,
+  });
+
+  return { jwt };
+});
+
+// ROUTE: returns list of files uploaded given an API key
+server.get(`/listFiles`, async (req, reply) => {
+  // @ts-expect-error
+  const user: User = req.requestContext.get("user" as never);
+
+  const getAllFilesUploaded = await axios.get(
+    `https://api.openai.com/v1/files`,
+    {
+      headers: { Authorization: `Bearer ${user?.openAiApiKey}` },
+    }
+  );
+  const allFilesUploaded = await getAllFilesUploaded.data.data;
+
+  return { files: allFilesUploaded };
+});
+
+// ROUTE: uploading files to OpenAI
+server.post(`/uploadFileToOpenAI`, async (req, reply) => {
+  try {
+    const {
+      trainingData,
+      datasetName,
+    }: { trainingData: string; datasetName: string } = JSON.parse(
+      req.body as string
+    );
+
+    let fileblob = new Blob([trainingData], {
+      type: "text/plain; charset=utf8",
+    });
+
+    let body = new FormData();
+
+    body.append("purpose", "fine-tune");
+
+    // is custom training data (so it will already have .jsonl extension)
+    if (datasetName.includes(".jsonl")) {
+      body.append("file", fileblob, datasetName);
+    } else {
+      body.append("file", fileblob, `${datasetName}.jsonl`);
+    }
+
+    // TODO: if we want to write to project and see the training data in action
+    // fs.writeFile(
+    //   `${datasetName}.jsonl`,
+
+    //   trainingData,
+    //   (err) => console.log(err)
+    // );
+
+    // @ts-expect-error
+    const user: User = req.requestContext.get("user" as never);
+
+    // create openai instance when uploading so we can get proper error message
+
+    // @ts-expect-error
+    const openaiApi = new OpenAI({ apiKey: user?.openAiApiKey });
+
+    const upload = await openaiApi.files.create({
+      // @ts-expect-error
+      file: body.get("file"),
+      // @ts-expect-error
+      purpose: body.get("purpose"),
+    });
+
+    // WITH HTTP API
+    // const upload = await axios.post("https://api.openai.com/v1/files", body, {
+    //   headers: {
+    //     Authorization: `Bearer ${user?.openAiApiKey}`,
+    //     "Content-Type": "text/plain",
+    //   },
+    // });
+
+    return upload;
+  } catch (error) {
+    console.error("Error on upload file:", error);
+    // @ts-ignore
+    return reply.status(500).send({ error: error.message });
+  }
+});
+
+// ROUTE:
+server.post(`/startFineTune`, async (req, reply) => {
+  // @ts-expect-error
+  const user: User = req.requestContext.get("user" as never);
+
+  const startFineTune = await axios.post(
+    `https://api.openai.com/v1/fine_tuning/jobs`,
+    { training_file: `file-2a7sFq8f0Uaelrwz9Ndf06Xg`, model: "gpt-3.5-turbo" },
+    { headers: { Authorization: `Bearer ${user?.openAiApiKey}` } }
+  );
+  const fineTune = await startFineTune.data;
+  console.log(fineTune);
+  return fineTune;
+});
+
+server.get(`/listModels`, async (req, reply) => {
+  // @ts-expect-error
+  const user: User = req.requestContext.get("user" as never);
+
+  const listModels = await axios.get(`https://api.openai.com/v1/models`, {
+    headers: { Authorization: `Bearer ${user?.openAiApiKey}` },
+  });
+
+  const models = listModels.data.data;
+
+  return { models };
+});
+
+server.post(`/saveApiKey`, async (req, reply) => {
+  const { apiKey } = JSON.parse(req.body as string);
+
+  // @ts-expect-error
+  const user: User = req.requestContext.get("user" as never);
+
+  const updateApiKey = await prisma.user.update({
+    where: { email: user.email },
+    data: { openAiApiKey: apiKey },
+  });
+
+  return { success: true };
+});
+
+server.get(`/getFile`, async (req, reply) => {
+  // @ts-expect-error
+  const user: User = req.requestContext.get("user" as never);
+
+  const { id }: any = req.query;
+  const fileID = id as string;
+  const file = await axios.get(`https://api.openai.com/v1/files/${fileID}`, {
+    headers: { Authorization: `Bearer ${user?.openAiApiKey}` },
+  });
+
+  return { file: file.data };
+});
+
+server.post(`/createFinetune`, async (req, reply) => {
+  const { fileId, n_epochs } = JSON.parse(req.body as string);
+  // @ts-expect-error
+  const user: User = req.requestContext.get("user" as never);
+
+  // @ts-expect-error
+  const openaiApi = new OpenAI({ apiKey: user?.openAiApiKey });
+
+  // start creating finetune job
+  const startJob = await openaiApi.fineTuning.jobs.create({
+    model: "gpt-3.5-turbo",
+    training_file: fileId,
+    // default to 3 if it wasn't passed in
+    hyperparameters: { n_epochs: n_epochs || 3 },
+  });
+
+  const jobData = startJob;
+
+  return { job: jobData };
+});
+
+server.get(`/finetuneJobs`, async (req, reply) => {
+  // @ts-expect-error
+  const user: User = req.requestContext.get("user" as never);
+
+  const getJobs = await axios.get(
+    `https://api.openai.com/v1/fine_tuning/jobs`,
+    { headers: { Authorization: `Bearer ${user?.openAiApiKey}` } }
+  );
+
+  const jobs = getJobs.data;
+
+  return { jobs };
+});
+
+server.get(`/getFileContent`, async (req, reply) => {
+  // @ts-expect-error
+  const { id } = req.query;
+
+  // @ts-expect-error
+  const user: User = req.requestContext.get("user" as never);
+
+  const getFileContent = await axios.get(
+    `https://api.openai.com/v1/files/${id}/content`,
+    { headers: { Authorization: `Bearer ${user?.openAiApiKey}` } }
+  );
+
+  const fileContent = getFileContent.data;
+
+  return { fileContent };
+});
+
+// Run the server!
+// @ts-expect-error
+server.listen({ port: process.env.PORT || 4000 });

@@ -1,0 +1,31 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  picture      String
+  createdAt    DateTime @default(now())
+  openAiApiKey String?
+
+  @@map("User")
+}
+
+// model CustomModel {
+//   id             String       @id @default(uuid())
+//   createdAt      DateTime     @default(now())
+//   Organization   Organization @relation(fields: [organizationId], references: [id])
+//   organizationId String
+
+//   @@map("CustomModel")
+// }
