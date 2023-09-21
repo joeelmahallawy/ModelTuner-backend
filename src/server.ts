@@ -65,8 +65,6 @@ server.get(`/session`, async (req, reply) => {
   const user = req.requestContext.get("user");
 
   return { user };
-
-  //
 });
 
 // ROUTE: will either create user, or log into user and send back JWT
@@ -126,7 +124,11 @@ server.post(`/uploadFileToOpenAI`, async (req, reply) => {
     if (datasetName.includes(".jsonl")) {
       body.append("file", fileblob, datasetName);
     } else {
-      body.append("file", fileblob, `${datasetName}.jsonl`);
+      body.append(
+        "file",
+        fileblob,
+        `${datasetName.replace(".json", "")}.jsonl`
+      );
     }
 
     // TODO: if we want to write to project and see the training data in action
@@ -169,20 +171,6 @@ server.post(`/uploadFileToOpenAI`, async (req, reply) => {
 });
 
 // ROUTE:
-server.post(`/startFineTune`, async (req, reply) => {
-  // @ts-expect-error
-  const user: User = req.requestContext.get("user" as never);
-
-  const startFineTune = await axios.post(
-    `https://api.openai.com/v1/fine_tuning/jobs`,
-    { training_file: `file-2a7sFq8f0Uaelrwz9Ndf06Xg`, model: "gpt-3.5-turbo" },
-    { headers: { Authorization: `Bearer ${user?.openAiApiKey}` } }
-  );
-  const fineTune = await startFineTune.data;
-  console.log(fineTune);
-  return fineTune;
-});
-
 server.get(`/listModels`, async (req, reply) => {
   // @ts-expect-error
   const user: User = req.requestContext.get("user" as never);
@@ -225,23 +213,29 @@ server.get(`/getFile`, async (req, reply) => {
 
 server.post(`/createFinetune`, async (req, reply) => {
   const { fileId, n_epochs } = JSON.parse(req.body as string);
-  // @ts-expect-error
-  const user: User = req.requestContext.get("user" as never);
+  try {
+    // @ts-expect-error
+    const user: User = req.requestContext.get("user" as never);
 
-  // @ts-expect-error
-  const openaiApi = new OpenAI({ apiKey: user?.openAiApiKey });
+    // @ts-expect-error
+    const openaiApi = new OpenAI({ apiKey: user?.openAiApiKey });
 
-  // start creating finetune job
-  const startJob = await openaiApi.fineTuning.jobs.create({
-    model: "gpt-3.5-turbo",
-    training_file: fileId,
-    // default to 3 if it wasn't passed in
-    hyperparameters: { n_epochs: n_epochs || 3 },
-  });
+    // start creating finetune job
+    const startJob = await openaiApi.fineTuning.jobs.create({
+      model: "gpt-3.5-turbo",
+      training_file: fileId,
+      // default to 3 if it wasn't passed in
+      hyperparameters: { n_epochs: n_epochs || 3 },
+    });
 
-  const jobData = startJob;
+    const jobData = startJob;
 
-  return { job: jobData };
+    console.log(`JOB DATA:`, jobData);
+    return { job: jobData };
+  } catch (err) {
+    // @ts-expect-error
+    return reply.status(err?.status || 400).send(err);
+  }
 });
 
 server.get(`/finetuneJobs`, async (req, reply) => {
@@ -273,6 +267,21 @@ server.get(`/getFileContent`, async (req, reply) => {
   const fileContent = getFileContent.data;
 
   return { fileContent };
+});
+
+server.delete(`/deleteModel`, async (req, reply) => {
+  // @ts-expect-error
+  const { id } = req.query;
+
+  // @ts-expect-error
+  const user: User = req.requestContext.get("user" as never);
+
+  // @ts-expect-error
+  const openaiApi = new OpenAI({ apiKey: user?.openAiApiKey });
+
+  const model = await openaiApi.models.del(id);
+
+  return model;
 });
 
 // Run the server!
