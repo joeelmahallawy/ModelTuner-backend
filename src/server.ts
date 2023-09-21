@@ -171,6 +171,26 @@ server.post(`/uploadFileToOpenAI`, async (req, reply) => {
 });
 
 // ROUTE:
+server.delete(`/deleteFile`, async (req, reply) => {
+  //@ts-expect-error
+  const { id } = req.query;
+
+  // @ts-expect-error
+  const user: User = req.requestContext.get("user" as never);
+
+  const deleteFile = await axios.delete(
+    `https://api.openai.com/v1/files/${id}`,
+    {
+      headers: { Authorization: `Bearer ${user?.openAiApiKey}` },
+    }
+  );
+
+  const deleteFileResponse = deleteFile.data;
+
+  return deleteFileResponse;
+});
+
+// ROUTE:
 server.get(`/listModels`, async (req, reply) => {
   // @ts-expect-error
   const user: User = req.requestContext.get("user" as never);

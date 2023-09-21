@@ -24,8 +24,8 @@ model User {
 // model CustomModel {
 //   id             String       @id @default(uuid())
 //   createdAt      DateTime     @default(now())
-//   Organization   Organization @relation(fields: [organizationId], references: [id])
-//   organizationId String
+//   customName   String
+//   openAiModelId String
 
 //   @@map("CustomModel")
 // }
