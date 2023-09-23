@@ -70,9 +70,10 @@ server.get(`/session`, async (req, reply) => {
 // ROUTE: will either create user, or log into user and send back JWT
 server.post(`/loginWithGoogle`, async (req, reply) => {
   const { name, email, picture } = JSON.parse(req.body as string);
-  let user = await prisma.user.findFirst({ where: { email } });
 
   // user already exists
+  let user = await prisma.user.findFirst({ where: { email } });
+  const firstTimeSignIn = Boolean(!user);
 
   // user isn't registered
   if (!user) {
@@ -83,7 +84,7 @@ server.post(`/loginWithGoogle`, async (req, reply) => {
     email: user.email,
   });
 
-  return { jwt };
+  return { jwt, firstTimeSignIn };
 });
 
 // ROUTE: returns list of files uploaded given an API key
@@ -302,6 +303,29 @@ server.delete(`/deleteModel`, async (req, reply) => {
   const model = await openaiApi.models.del(id);
 
   return model;
+});
+
+server.post(`/testApiKey`, async (req, reply) => {
+  // @ts-expect-error
+  const user: User = req.requestContext.get("user" as never);
+
+  const { apiKey } = JSON.parse(req.body as string);
+
+  const openaiApi = new OpenAI({ apiKey });
+
+  const response = await openaiApi.models.list();
+
+  // @ts-expect-error
+  if (!response.error) {
+    await prisma.user.update({
+      data: { openAiApiKey: apiKey },
+      where: { email: user?.email },
+    });
+  }
+
+  return response;
+
+  //
 });
 
 // Run the server!
