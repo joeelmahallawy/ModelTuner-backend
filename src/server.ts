@@ -16,7 +16,6 @@ server.register(reqContext);
 
 server.register(cors, {
   // credentials: true,
-
   origin: ["https://www.modeltunerai.com"],
 });
 
