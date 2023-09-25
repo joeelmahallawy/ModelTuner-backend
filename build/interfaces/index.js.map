@@ -1,0 +1,1 @@
+{"version":3,"file":"index.js","sourceRoot":"/","sources":["interfaces/index.ts"],"names":[],"mappings":"","sourcesContent":["export type User = {\n  id: string;\n  email: string;\n  name: string;\n  picture: string;\n  createdAt: Date;\n  openAiApiKey: string | null;\n};\n"]}
