@@ -181,5 +181,8 @@ server.post(`/testApiKey`, (req, reply) => tslib_1.__awaiter(void 0, void 0, voi
     }
     return response;
 }));
-server.listen({ port: process.env.PORT || 4000, host: "0.0.0.0" });
+server.listen({
+    port: process.env.PORT || 4000,
+    host: process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost",
+});
 //# sourceMappingURL=server.js.map
