@@ -18,6 +18,7 @@ server.register(cors_1.default, {
 });
 const UNAUTHENTICATED_PATHS = {
     "/loginWithGoogle": true,
+    "/": true,
 };
 server.addHook("onRequest", (req, reply) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;

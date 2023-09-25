@@ -22,6 +22,7 @@ server.register(cors, {
 
 const UNAUTHENTICATED_PATHS: any = {
   "/loginWithGoogle": true,
+  "/": true,
 };
 // to CHECK AUTH and send away if not
 
