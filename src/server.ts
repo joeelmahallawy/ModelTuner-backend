@@ -16,16 +16,32 @@ server.register(reqContext);
 
 server.register(cors, {
   // allowedHeaders: "*",
-  // TODO: CHANGE IN PRODUCTION TO PUBLIC WEBSITE URL
-  allowedHeaders: "modeltunerai",
+  origin: (origin: any, cb: any) => {
+    // we're in development, so let all requests thru
+    if (process.env.NODE_ENV === "development") {
+      cb(null, true);
+      return;
+    }
+
+    // we're in production and the website is sending a request
+    const hostname = new URL(origin).hostname;
+    if (process.env.NODE_ENV === "production" && hostname === "modeltunerai") {
+      // let it pass
+      cb(null, true);
+      return;
+    }
+
+    // all other cases, reject it
+    cb(new Error("Not allowed"));
+  },
 });
 
 const UNAUTHENTICATED_PATHS: any = {
   "/loginWithGoogle": true,
   "/": true,
 };
-// to CHECK AUTH and send away if not
 
+// to CHECK AUTH and send away if not
 server.addHook("onRequest", async (req, reply) => {
   // path doesn't require authenticated so continue
   if (UNAUTHENTICATED_PATHS[req.routeOptions.url]) return;

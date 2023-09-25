@@ -14,7 +14,18 @@ const server = (0, fastify_1.default)({
 });
 server.register(request_context_1.default);
 server.register(cors_1.default, {
-    allowedHeaders: "modeltunerai",
+    origin: (origin, cb) => {
+        if (process.env.NODE_ENV === "development") {
+            cb(null, true);
+            return;
+        }
+        const hostname = new URL(origin).hostname;
+        if (process.env.NODE_ENV === "production" && hostname === "modeltunerai") {
+            cb(null, true);
+            return;
+        }
+        cb(new Error("Not allowed"));
+    },
 });
 const UNAUTHENTICATED_PATHS = {
     "/loginWithGoogle": true,
