@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "nodemon src/server.ts",
-    "start": "fastify start -l info build/server.js",
+    "start": "node build/server.js",
     "build": "tsc --project tsconfig.prod.json",
     "push": "npx prisma db push --schema=./src/prisma/schema.prisma",
     "gen": "npx prisma generate --schema=./src/prisma/schema.prisma"
