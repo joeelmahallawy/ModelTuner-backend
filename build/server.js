@@ -14,7 +14,7 @@ const server = (0, fastify_1.default)({
 });
 server.register(request_context_1.default);
 server.register(cors_1.default, {
-    allowedHeaders: "modeltunerai.com",
+    allowedHeaders: "modeltunerai",
 });
 const UNAUTHENTICATED_PATHS = {
     "/loginWithGoogle": true,

@@ -17,7 +17,7 @@ server.register(reqContext);
 server.register(cors, {
   // allowedHeaders: "*",
   // TODO: CHANGE IN PRODUCTION TO PUBLIC WEBSITE URL
-  allowedHeaders: "modeltunerai.com",
+  allowedHeaders: "modeltunerai",
 });
 
 const UNAUTHENTICATED_PATHS: any = {
