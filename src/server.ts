@@ -1,15 +1,12 @@
 import reqContext from "@fastify/request-context";
-
-import fs from "fs";
 import "dotenv/config";
 import axios from "axios";
 import cors from "@fastify/cors";
 import OpenAI from "openai";
-import Fastify, { FastifyInstance } from "fastify";
+import Fastify from "fastify";
 import prisma from "./prisma";
 import fastifyJwt from "@fastify/jwt";
-import { User } from "@prisma/client";
-import fastifyMiddie from "@fastify/middie";
+import { User } from "./interfaces";
 
 const server = Fastify({
   logger: true,
@@ -18,9 +15,9 @@ const server = Fastify({
 server.register(reqContext);
 
 server.register(cors, {
-  allowedHeaders: "*",
-  // TODO: CHANGE IN PRODUCTION TO PUBLIC WEBSITE URL
   // allowedHeaders: "*",
+  // TODO: CHANGE IN PRODUCTION TO PUBLIC WEBSITE URL
+  allowedHeaders: "modeltunerai.com",
 });
 
 const UNAUTHENTICATED_PATHS: any = {
@@ -90,7 +87,7 @@ server.post(`/loginWithGoogle`, async (req, reply) => {
 // ROUTE: returns list of files uploaded given an API key
 server.get(`/listFiles`, async (req, reply) => {
   // @ts-expect-error
-  const user: User = req.requestContext.get("user" as never);
+  const user: User = req.requestContext.get("user" as never) as User;
 
   const getAllFilesUploaded = await axios.get(
     `https://api.openai.com/v1/files`,
@@ -141,12 +138,11 @@ server.post(`/uploadFileToOpenAI`, async (req, reply) => {
     // );
 
     // @ts-expect-error
-    const user: User = req.requestContext.get("user" as never);
+    const user: User = req.requestContext.get("user" as never) as User;
 
     // create openai instance when uploading so we can get proper error message
 
-    // @ts-expect-error
-    const openaiApi = new OpenAI({ apiKey: user?.openAiApiKey });
+    const openaiApi = new OpenAI({ apiKey: user?.openAiApiKey as string });
 
     const upload = await openaiApi.files.create({
       // @ts-expect-error
@@ -177,7 +173,7 @@ server.delete(`/deleteFile`, async (req, reply) => {
   const { id } = req.query;
 
   // @ts-expect-error
-  const user: User = req.requestContext.get("user" as never);
+  const user: User = req.requestContext.get("user" as never) as User;
 
   const deleteFile = await axios.delete(
     `https://api.openai.com/v1/files/${id}`,
@@ -194,7 +190,7 @@ server.delete(`/deleteFile`, async (req, reply) => {
 // ROUTE:
 server.get(`/listModels`, async (req, reply) => {
   // @ts-expect-error
-  const user: User = req.requestContext.get("user" as never);
+  const user: User = req.requestContext.get("user" as never) as User;
 
   const listModels = await axios.get(`https://api.openai.com/v1/models`, {
     headers: { Authorization: `Bearer ${user?.openAiApiKey}` },
@@ -209,7 +205,7 @@ server.post(`/saveApiKey`, async (req, reply) => {
   const { apiKey } = JSON.parse(req.body as string);
 
   // @ts-expect-error
-  const user: User = req.requestContext.get("user" as never);
+  const user: User = req.requestContext.get("user" as never) as User;
 
   const updateApiKey = await prisma.user.update({
     where: { email: user.email },
@@ -221,7 +217,7 @@ server.post(`/saveApiKey`, async (req, reply) => {
 
 server.get(`/getFile`, async (req, reply) => {
   // @ts-expect-error
-  const user: User = req.requestContext.get("user" as never);
+  const user: User = req.requestContext.get("user" as never) as User;
 
   const { id }: any = req.query;
   const fileID = id as string;
@@ -236,10 +232,9 @@ server.post(`/createFinetune`, async (req, reply) => {
   const { fileId, n_epochs } = JSON.parse(req.body as string);
   try {
     // @ts-expect-error
-    const user: User = req.requestContext.get("user" as never);
+    const user: User = req.requestContext.get("user" as never) as User;
 
-    // @ts-expect-error
-    const openaiApi = new OpenAI({ apiKey: user?.openAiApiKey });
+    const openaiApi = new OpenAI({ apiKey: user?.openAiApiKey as string });
 
     // start creating finetune job
     const startJob = await openaiApi.fineTuning.jobs.create({
@@ -261,7 +256,7 @@ server.post(`/createFinetune`, async (req, reply) => {
 
 server.get(`/finetuneJobs`, async (req, reply) => {
   // @ts-expect-error
-  const user: User = req.requestContext.get("user" as never);
+  const user: User = req.requestContext.get("user" as never) as User;
 
   const getJobs = await axios.get(
     `https://api.openai.com/v1/fine_tuning/jobs`,
@@ -278,7 +273,7 @@ server.get(`/getFileContent`, async (req, reply) => {
   const { id } = req.query;
 
   // @ts-expect-error
-  const user: User = req.requestContext.get("user" as never);
+  const user: User = req.requestContext.get("user" as never) as User;
 
   const getFileContent = await axios.get(
     `https://api.openai.com/v1/files/${id}/content`,
@@ -295,10 +290,9 @@ server.delete(`/deleteModel`, async (req, reply) => {
   const { id } = req.query;
 
   // @ts-expect-error
-  const user: User = req.requestContext.get("user" as never);
+  const user: User = req.requestContext.get("user" as never) as User;
 
-  // @ts-expect-error
-  const openaiApi = new OpenAI({ apiKey: user?.openAiApiKey });
+  const openaiApi = new OpenAI({ apiKey: user?.openAiApiKey as string });
 
   const model = await openaiApi.models.del(id);
 
@@ -307,7 +301,7 @@ server.delete(`/deleteModel`, async (req, reply) => {
 
 server.post(`/testApiKey`, async (req, reply) => {
   // @ts-expect-error
-  const user: User = req.requestContext.get("user" as never);
+  const user: User = req.requestContext.get("user" as never) as User;
 
   const { apiKey } = JSON.parse(req.body as string);
 
