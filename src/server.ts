@@ -330,4 +330,4 @@ server.post(`/testApiKey`, async (req, reply) => {
 
 // Run the server!
 // @ts-expect-error
-server.listen({ port: process.env.PORT || 4000 });
+server.listen({ port: process.env.PORT || 4000, host: "0.0.0.0" });

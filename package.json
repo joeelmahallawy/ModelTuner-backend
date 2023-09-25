@@ -7,9 +7,9 @@
     "test": "test"
   },
   "scripts": {
-    "test": "tap \"test/**/*.test.js\"",
-    "start": "fastify start -l info build/server.js",
     "dev": "nodemon src/server.ts",
+    "start": "fastify start -l info build/server.js",
+    "build": "tsc --project tsconfig.prod.json",
     "push": "npx prisma db push --schema=./src/prisma/schema.prisma",
     "gen": "npx prisma generate --schema=./src/prisma/schema.prisma"
   },
@@ -34,6 +34,7 @@
     "openai": "^4.7.1",
     "prisma": "^5.3.1",
     "ts-node": "^10.9.1",
+    "tslib": "^2.6.2",
     "typescript": "^5.2.2"
   },
   "devDependencies": {
