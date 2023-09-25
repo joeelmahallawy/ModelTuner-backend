@@ -14,9 +14,7 @@ const server = (0, fastify_1.default)({
 });
 server.register(request_context_1.default);
 server.register(cors_1.default, {
-    origin: (origin, cb) => {
-        cb(null, true);
-    },
+    origin: ["https://www.modeltunerai.com"],
 });
 const UNAUTHENTICATED_PATHS = {
     "/loginWithGoogle": true,

@@ -16,25 +16,24 @@ server.register(reqContext);
 
 server.register(cors, {
   // allowedHeaders: "*",
-  origin: (origin: any, cb: any) => {
-    cb(null, true);
-    // // we're in development, so let all requests thru
-    // if (process.env.NODE_ENV === "development") {
-    //   cb(null, true);
-    //   return;
-    // }
-
-    // // we're in production and the website is sending a request
-    // const hostname = new URL(origin).hostname;
-    // if (process.env.NODE_ENV === "production" && hostname === "modeltunerai") {
-    //   // let it pass
-    //   cb(null, true);
-    //   return;
-    // }
-
-    // // all other cases, reject it
-    // cb(new Error("Not allowed"));
-  },
+  // origin: (origin: any, cb: any) => {
+  //   cb(null, true);
+  // // we're in development, so let all requests thru
+  // if (process.env.NODE_ENV === "development") {
+  //   cb(null, true);
+  //   return;
+  // }
+  // // we're in production and the website is sending a request
+  // const hostname = new URL(origin).hostname;
+  // if (process.env.NODE_ENV === "production" && hostname === "modeltunerai") {
+  //   // let it pass
+  //   cb(null, true);
+  //   return;
+  // }
+  // // all other cases, reject it
+  // cb(new Error("Not allowed"));
+  // },
+  origin: ["https://www.modeltunerai.com"],
 });
 
 const UNAUTHENTICATED_PATHS: any = {
